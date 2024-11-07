@@ -13,12 +13,14 @@ class EmailVerification extends Mailable
 {
     use Queueable, SerializesModels;
 
+    public $verificationUrl;
+
     /**
      * Create a new message instance.
      */
-    public function __construct()
+    public function __construct($verificationUrl)
     {
-        //
+        $this->verificationUrl = $verificationUrl;
     }
 
     /**
@@ -36,11 +38,17 @@ class EmailVerification extends Mailable
     /**
      * Get the message content definition.
      */
-    public function content(): Content
+    // public function content(): Content
+    // {
+    //     return new Content(
+    //         markdown: 'mail.email-verification',
+    //     );
+    // }
+
+    public function build()
     {
-        return new Content(
-            markdown: 'mail.email-verification',
-        );
+        return $this->view('mail.email-verification')
+            ->with(['verificationUrl' => $this->verificationUrl]);
     }
 
     /**

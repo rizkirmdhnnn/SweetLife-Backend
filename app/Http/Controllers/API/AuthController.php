@@ -123,4 +123,47 @@ class AuthController extends Controller
             ], 500);
         }
     }
+
+    protected function SendVerificationEmail(User $user)
+    {
+        // bikin hash
+        $hash = hash_hmac('sha256', $user->id . $user->email, env('APP_KEY'));
+
+        // bikin url + hash
+        $verificationUrl = url("/api/v1/verify-email/{$user->id}?hash={$hash}");
+
+        // kirim email
+        Mail::to($user->email)->send(new EmailVerification($verificationUrl));
+    }
+
+    public function VerifyEmail(Request $request, $id)
+    {
+        $user = User::find($id);
+        if (! $user) {
+            return response()->json([
+                'status' => false,
+                'message' => 'user not found',
+            ], 404);
+        }
+
+        if ($user->email_verified_at) {
+            return redirect()->route('verify.success');
+        }
+        // ambil hashnya
+        $hash = $request->query('hash');
+
+        // generate ulang hashnya
+        $expectedHash = hash_hmac('sha256', $user->id . $user->email, env('APP_KEY'));
+
+        // ojo dibanding bandingke
+        if (!hash_equals($expectedHash, $hash)) {
+            return view('mail.verify-failed');
+        }
+
+        // update usere cik
+        $user->email_verified_at = now();
+        $user->save();
+
+        return redirect()->route('verify.success');
+    }
 }
